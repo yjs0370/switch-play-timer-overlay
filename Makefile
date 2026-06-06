@@ -1,10 +1,10 @@
 TARGET      := switch-play-timer-overlay
 BUILD       := build
 
-CXX         ?= aarch64-none-elf-c++
+CXX         ?= aarch64-none-elf-g++
 CC          ?= aarch64-none-elf-gcc
 
-CFLAGS      := -Wall -O2 -march=armv8-a -mtune=cortex-a57 \
+CFLAGS      := -Wall -O2 \
                -I$(PORTLIBS)/include -I$(LIBNX)/include
 CXXFLAGS    := $(CFLAGS) -std=c++17 -fno-exceptions -fno-rtti
 LIBS        := -ltesla -lnx

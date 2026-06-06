@@ -1,0 +1,49 @@
+name: Build Tesla Overlay
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/devkitpro/devkita64:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install libtesla
+        run: |
+          dkp-pacman -Sy --noconfirm
+          dkp-pacman -S --noconfirm switch-libtesla 2>/dev/null || true
+          if [ ! -f /opt/devkitpro/portlibs/switch/include/tesla.hpp ]; then
+            apt-get update -qq 2>/dev/null || true
+            apt-get install -y -qq git cmake 2>/dev/null || true
+            git clone --depth=1 https://github.com/WerWolv/libtesla.git /tmp/libtesla
+            mkdir -p /tmp/libtesla/build && cd /tmp/libtesla/build
+            cmake .. \
+              -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/Switch.cmake \
+              -DCMAKE_INSTALL_PREFIX=/opt/devkitpro/portlibs/switch
+            make -j$(nproc) install
+          fi
+
+      - name: Build overlay
+        run: make -j$(nproc) 2>&1
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: switch-play-timer-overlay
+          path: |
+            build/switch-play-timer-overlay.ovl
+            build/*.ovl
+            build/*.elf
+          if-no-files-found: error

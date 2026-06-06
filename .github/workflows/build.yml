@@ -20,15 +20,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install libtesla (clone and copy headers)
+      - name: Install libtesla (download headers via curl)
         run: |
-          git clone --depth=1 https://github.com/WerWolv/libtesla.git /tmp/libtesla
+          set -e
           mkdir -p /opt/devkitpro/portlibs/switch/include/tesla
-          cp /tmp/libtesla/tesla.hpp /opt/devkitpro/portlibs/switch/include/
-          cp /tmp/libtesla/tesla/*.hpp /opt/devkitpro/portlibs/switch/include/tesla/ 2>/dev/null || true
-          cp /tmp/libtesla/tesla/*.h /opt/devkitpro/portlibs/switch/include/tesla/ 2>/dev/null || true
+          # Download tesla.hpp (single-header version from releases)
+          curl -L -o /opt/devkitpro/portlibs/switch/include/tesla.hpp \
+            https://github.com/WerWolv/libtesla/releases/download/v1.2.0/tesla.hpp || \
+          curl -L -o /opt/devkitpro/portlibs/switch/include/tesla.hpp \
+            https://raw.githubusercontent.com/WerWolv/libtesla/master/tesla.hpp
+          # Download tesla subdirectory headers
+          for f in elm.hpp elem.hpp hlp.hpp utl.hpp; do
+            curl -L -o /opt/devkitpro/portlibs/switch/include/tesla/$f \
+              https://raw.githubusercontent.com/WerWolv/libtesla/master/tesla/$f || true
+          done
           ls -la /opt/devkitpro/portlibs/switch/include/tesla.hpp
-          ls -la /opt/devkitpro/portlibs/switch/include/tesla/
+          head -10 /opt/devkitpro/portlibs/switch/include/tesla.hpp || true
 
       - name: Build overlay
         run: make -j$(nproc) 2>&1

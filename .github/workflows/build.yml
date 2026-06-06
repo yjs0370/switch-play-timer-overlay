@@ -20,13 +20,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install libtesla (download single header)
+      - name: Install libtesla (clone and copy headers)
         run: |
+          git clone --depth=1 https://github.com/WerWolv/libtesla.git /tmp/libtesla
           mkdir -p /opt/devkitpro/portlibs/switch/include/tesla
-          curl -L -o /opt/devkitpro/portlibs/switch/include/tesla.hpp \
-            https://raw.githubusercontent.com/WerWolv/libtesla/master/tesla.hpp
+          cp /tmp/libtesla/tesla.hpp /opt/devkitpro/portlibs/switch/include/
+          cp /tmp/libtesla/tesla/*.hpp /opt/devkitpro/portlibs/switch/include/tesla/ 2>/dev/null || true
+          cp /tmp/libtesla/tesla/*.h /opt/devkitpro/portlibs/switch/include/tesla/ 2>/dev/null || true
           ls -la /opt/devkitpro/portlibs/switch/include/tesla.hpp
-          head -5 /opt/devkitpro/portlibs/switch/include/tesla.hpp
+          ls -la /opt/devkitpro/portlibs/switch/include/tesla/
 
       - name: Build overlay
         run: make -j$(nproc) 2>&1

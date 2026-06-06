@@ -20,41 +20,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install libtesla via dkp-pacman
+      - name: Install libtesla (download single header)
         run: |
-          dkp-pacman -Sy --noconfirm
-          dkp-pacman -S --noconfirm switch-libtesla
-          echo "Checking for tesla.hpp..."
-          find /opt/devkitpro -name "tesla.hpp" 2>/dev/null || echo "tesla.hpp NOT FOUND via dkp-pacman"
-
-      - name: Fallback - build libtesla from source
-        run: |
-          if [ ! -f /opt/devkitpro/portlibs/switch/include/tesla.hpp ]; then
-            echo "Building libtesla from source..."
-            apt-get update -qq && apt-get install -y -qq git cmake ninja-build
-            git clone --depth=1 https://github.com/WerWolv/libtesla.git /tmp/libtesla
-            ls -la /tmp/libtesla/
-            mkdir -p /tmp/libtesla/build && cd /tmp/libtesla/build
-            cmake .. \
-              -DCMAKE_TOOLCHAIN_FILE=/opt/devkitpro/cmake/Switch.cmake \
-              -DCMAKE_INSTALL_PREFIX=/opt/devkitpro/portlibs/switch \
-              -G Ninja
-            ninja install
-          else
-            echo "tesla.hpp already installed, skipping source build."
-          fi
-
-      - name: Verify libtesla installed
-        run: |
-          find /opt/devkitpro -name "tesla.hpp" 2>/dev/null
-          cat /opt/devkitpro/portlibs/switch/include/tesla.hpp | head -5
+          mkdir -p /opt/devkitpro/portlibs/switch/include/tesla
+          curl -L -o /opt/devkitpro/portlibs/switch/include/tesla.hpp \
+            https://raw.githubusercontent.com/WerWolv/libtesla/master/tesla.hpp
+          ls -la /opt/devkitpro/portlibs/switch/include/tesla.hpp
+          head -5 /opt/devkitpro/portlibs/switch/include/tesla.hpp
 
       - name: Build overlay
         run: make -j$(nproc) 2>&1
 
       - name: List build outputs
         run: |
-          ls -la build/ || echo "build/ directory not found"
+          ls -la build/ || echo "build/ not found"
           find . -name "*.ovl" -o -name "*.elf" 2>/dev/null
 
       - name: Upload artifact

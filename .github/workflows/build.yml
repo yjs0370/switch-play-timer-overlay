@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup devkitPro
-        uses: devkitPro/action-devkitpro@master
+        uses: d00nood/devkitpro-action@v1
         with:
           platform: switch
 

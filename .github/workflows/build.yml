@@ -1,4 +1,4 @@
-name: Build Tesla Overlay
+name: Build Switch Play Timer
 
 on:
   push:
@@ -20,37 +20,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install libtesla (download headers via curl)
-        run: |
-          set -e
-          mkdir -p /opt/devkitpro/portlibs/switch/include/tesla
-          # Download tesla.hpp (single-header version from releases)
-          curl -L -o /opt/devkitpro/portlibs/switch/include/tesla.hpp \
-            https://github.com/WerWolv/libtesla/releases/download/v1.2.0/tesla.hpp || \
-          curl -L -o /opt/devkitpro/portlibs/switch/include/tesla.hpp \
-            https://raw.githubusercontent.com/WerWolv/libtesla/master/tesla.hpp
-          # Download tesla subdirectory headers
-          for f in elm.hpp elem.hpp hlp.hpp utl.hpp; do
-            curl -L -o /opt/devkitpro/portlibs/switch/include/tesla/$f \
-              https://raw.githubusercontent.com/WerWolv/libtesla/master/tesla/$f || true
-          done
-          ls -la /opt/devkitpro/portlibs/switch/include/tesla.hpp
-          head -10 /opt/devkitpro/portlibs/switch/include/tesla.hpp || true
-
-      - name: Build overlay
+      - name: Build
         run: make -j$(nproc) 2>&1
 
       - name: List build outputs
         run: |
           ls -la build/ || echo "build/ not found"
-          find . -name "*.ovl" -o -name "*.elf" 2>/dev/null
+          find . -name "*.nro" -o -name "*.elf" 2>/dev/null
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: switch-play-timer-overlay
+          name: switch-play-timer
           path: |
-            build/switch-play-timer-overlay.ovl
-            build/*.ovl
+            build/switch-play-timer.nro
+            build/*.nro
             build/*.elf
           if-no-files-found: error

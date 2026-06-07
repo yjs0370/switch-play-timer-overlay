@@ -18,37 +18,26 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install devkitPro via official installer
+      - name: Add devkitPro apt repository
         run: |
-          set -e
-          # Download latest devkitPro installer
-          INSTALLER_URL="https://github.com/devkitPro/installer/releases/latest/download/devkitpro-installer-linux"
-          wget -q "$INSTALLER_URL" -O /tmp/devkitpro-installer || {
-            # Try alternative URL
-            curl -sL "https://github.com/devkitPro/installer/releases/expanded_assets/latest" | grep -o '"[^"]*devkitpro-installer-linux[^"]*"' | head -1 | tr -d '"' | xargs -I{} wget -q "https://github.com/{}" -O /tmp/devkitpro-installer
-          }
-          chmod +x /tmp/devkitpro-installer
-          # Install devkitA64 + libnx silently
-          sudo /tmp/devkitpro-installer --yes --destdir /opt/devkitpro
-          # Set env vars for subsequent steps
+          # Add devkitPro apt repo (official method)
+          wget -q https://devkitpro.org/files/devkitpro-pubkey.gpg -O /tmp/devkitpro.gpg
+          sudo cp /tmp/devkitpro.gpg /etc/apt/trusted.gpg.d/devkitpro.gpg
+          echo "deb https://devkitpro.org/debian generic main" | sudo tee /etc/apt/sources.list.d/devkitpro.list
+          sudo apt-get update
+        shell: bash
+
+      - name: Install devkitA64 + libnx via apt
+        run: |
+          sudo apt-get install -y devkita64 libnx
           echo "DEVKITPRO=/opt/devkitpro" >> $GITHUB_ENV
           echo "DEVKITA64=/opt/devkitpro/devkitA64" >> $GITHUB_ENV
           echo "/opt/devkitpro/devkitA64/bin" >> $GITHUB_PATH
           echo "/opt/devkitpro/tools/bin" >> $GITHUB_PATH
         shell: bash
 
-      - name: Verify devkitPro install
-        run: |
-          ls /opt/devkitpro/ || echo "devkitpro not found"
-          which aarch64-none-elf-g++ || echo "compiler not found"
-        shell: bash
-
       - name: Build
         run: |
-          export DEVKITPRO=/opt/devkitpro
-          export DEVKITA64=$DEVKITPRO/devkitA64
-          export LIBNX=$DEVKITPRO/libnx
-          export PATH=$DEVKITPRO/tools/bin:$DEVKITA64/bin:$PATH
           make -j$(nproc) 2>&1
         shell: bash
 

@@ -18,13 +18,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup devkitPro
-        uses: d00nood/devkitpro-action@v1
-        with:
-          platform: switch
-
-      - name: Build
-        run: make -j$(nproc) 2>&1
+      - name: Build with devkitPro Docker
+        run: |
+          docker run --rm -v "${{ github.workspace }}:/work" -w /work devkitpro/devkita64 make -j$(nproc) 2>&1
 
       - name: List build outputs
         run: |
@@ -36,7 +32,6 @@ jobs:
         with:
           name: switch-play-timer
           path: |
-            build/switch-play-timer.nro
             build/*.nro
             build/*.elf
           if-no-files-found: error

@@ -18,28 +18,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install devkitPro
-        run: |
-          # Install devkitPro pacman
-          wget -q https://github.com/devkitPro/pacman/releases/download/v1.0.2/devkitpro-pacman.deb -O /tmp/devkitpro-pacman.deb
-          sudo dpkg -i /tmp/devkitpro-pacman.deb || true
-          sudo apt-get install -f -y
-          # Install switch dev tools
-          sudo dkp-pacman -S devkita64 libnx --noconfirm || true
-          # Fallback: use devkitPro Docker to get the tools
-          echo "DEVKITPRO=/opt/devkitpro" >> $GITHUB_ENV
-          echo "/opt/devkitpro/devkitA64/bin" >> $GITHUB_PATH
-          echo "/opt/devkitpro/tools/bin" >> $GITHUB_PATH
-        shell: bash
-
-      - name: Build via devkitPro Docker (reliable)
+      - name: Build with devkitPro Docker (fix sys/lock.h)
         run: |
           docker run --rm \
             -v "${{ github.workspace }}:/work" \
             -w /work \
-            -e DEVKITPRO=/opt/devkitpro \
             devkitpro/devkita64 \
-            bash -c "make -j\$(nproc) 2>&1 || (echo '--- Trying make clean ---' && make clean && make -j\$(nproc) 2>&1)"
+            bash -c "
+              # Create dummy sys/lock.h if missing
+              SYSLOCK=/opt/devkitpro/devkitA64/aarch64-none-elf/include/sys/lock.h
+              if [ ! -f \"\$SYSLOCK\" ]; then
+                mkdir -p \$(dirname \"\$SYSLOCK\")
+                echo '/* dummy sys/lock.h */' > \"\$SYSLOCK\"
+              fi
+              # Also check libnx include path
+              SYSLOCK2=/opt/devkitpro/libnx/include/sys/lock.h
+              if [ ! -f \"\$SYSLOCK2\" ]; then
+                mkdir -p \$(dirname \"\$SYSLOCK2\")
+                echo '/* dummy sys/lock.h */' > \"\$SYSLOCK2\"
+              fi
+              make -j\$(nproc) 2>&1
+            "
         shell: bash
 
       - name: List build outputs
